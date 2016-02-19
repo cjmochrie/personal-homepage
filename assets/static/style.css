@@ -1,0 +1,64 @@
+body {
+    font-family: 'Merriweather', serif;
+    margin: 50px 25px;
+}
+
+a {
+    color: #2a99b6;
+}
+
+a:hover {
+    color: #33bbdf;
+}
+
+header, footer, div.page {
+    width: 992px;
+    margin: 0 auto;
+    background: #daeef3;
+    padding: 20px 30px;
+}
+
+header h1 {
+    color: #169bbd;
+    margin: 0;
+    font-weight: normal;
+    font-size: 42px;
+    font-family: 'Lato', sans-serif;
+}
+
+header nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-family: 'Lato', sans-serif;
+    text-align: right;
+}
+
+header nav ul li {
+    display: inline;
+    margin: 0 8px 0 0;
+    padding: 0;
+    text-align: right;
+}
+
+div.page {
+    background: #fff;
+}
+
+.project-image {
+  max-width: 100%;
+  margin-top: 21px;
+  margin-bottom: 21px;
+}
+
+@media (min-width: 0px) {
+    .container{
+        max-width: 920px;
+    }
+}
+
+.blog-post img {
+    display:block;
+    margin-left:auto;
+    margin-right:auto;
+}

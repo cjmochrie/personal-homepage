@@ -1,0 +1,56 @@
+<!doctype html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{ get_pygments_stylesheet()|url }}">
+  <link rel="stylesheet" href="https://bootswatch.com/journal/bootstrap.min.css">
+  <link rel="stylesheet" href="{{ '/static/style.css'|url }}">
+  <link href='https://fonts.googleapis.com/css?family=Merriweather' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
+  <title>{% block title %}Welcome{% endblock %}</title>
+</head>
+<body>
+  {% set image = site.get('/').attachments.images.first() %}
+
+  <div class="container">
+    <div class="row">
+      <div class="header">
+      <div class="row">
+      <a href="/blog"><img class='img-responsive' src={{image|url}}></a>
+    </div>
+        <h1>Cameron Mochrie</h1>
+        <ul class="nav nav-tabs">
+          {% for href, title in [
+            ['/blog', 'Blog'],
+            ['/projects', 'Projects'],
+            ['/about', 'About']
+          ] %}
+            <li{% if this.is_child_of(href) %} class="active"{% endif
+              %}><a href="{{ href|url }}">{{ title }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+      {% block body %}
+
+      {% endblock %}
+    <div class="row">
+      <div class="col-xs-12">
+        <hr>
+        <div class="text-center">
+          <a href="https://twitter.com/cameronm1">
+            <img src="{{  '/static/twitter.png'|url }}">
+          </a>
+          <a href="https://github.com/cjmochrie">
+            <img src="{{  '/static/github.png'|url }}">
+          </a>
+           <a href="https://ca.linkedin.com/in/cjmochrie">
+            <img src="{{  '/static/linkedin.png'|url }}">
+          </a>
+        </div>
+        <div class="text-center">&copy; Copyright 2016 Cameron Mochrie.
+          Built with <a href="http://www.getlektor.com">Lektor</a>.</div>
+      </div>
+    </div>
+  </div>
+</body>
+

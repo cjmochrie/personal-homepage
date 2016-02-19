@@ -1,0 +1,5 @@
+[project]
+name = Homepage
+
+[packages]
+lektor-markdown-highlighter = 0.1

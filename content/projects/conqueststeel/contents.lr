@@ -1,0 +1,22 @@
+name: Conquest Steel Customer Portal
+---
+date: 2015-10-01
+---
+description: B2B Portal for Conquest Steel Inc, a Canadian steel products
+manufacturer, allowing custom quotation, order creation, and tracking for a
+large customer base with specialized pricing models across several hundred SKUs.
+Integrated with production management system and external shipping APIs.
+
+Al Moloo, Conquest Steel's CEO: "Cameron was able to develop an effective e-commerce solution
+for Conquest that dramatically reduced time spent on administrative activities, and
+improved the ordering experience for our customers of all sizes. His knowledge of
+our business also led him to propose and deploy several custom tools that
+streamlined various aspects of our business."
+
+Technologies used:
+ - Back-end: Flask, SQLAlchemy, Celery
+ - Front-end: Bootstrap, JQuery
+---
+type: E-commerce portal
+---
+website: http://www.conqueststeel.info

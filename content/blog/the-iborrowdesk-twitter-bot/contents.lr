@@ -1,0 +1,214 @@
+_model: blog-post
+---
+title: The @IBorrowDesk Twitter Bot (in Python)
+---
+author: Cameron
+---
+body:
+
+Given that I've only been programming seriously (probably still a stretch) for less
+than a year I had a tough time coming up with interesting things to talk about on my
+blog. But, I had a lot of fun making the [@IBorrowDesk](https://twitter.com/IBorrowDesk)
+bot, so I thought I'd walk through how I did it!
+
+
+###Step 1 - Install Twython:
+`pip install twython`
+
+[Twython](https://twython.readthedocs.org/en/latest) is a great wrapper over both the
+Twitter [REST](https://dev.twitter.com/rest/public) and
+[Streaming](https://dev.twitter.com/streaming/overview) API's. Hopefully I won't butcher the
+distinction between the two, but essentially the Streaming API is a consistent connection
+with the Twitter service that 'pushes' data to clients, whereas the REST API is a more traditional
+request-response model. I used both API's for this project - the Streaming API to 'receive'
+Tweets, and the REST API to 'respond'.
+
+
+###Step 2 - Set-up Twython/Twitter application:
+
+The Twython [documentation](https://twython.readthedocs.org/en/latest/usage/starting_out.html#beginning)
+is fairly straightforward in walking you through the process of setting up an application
+to talk to the Twitter API. The first option (OAuth 1) was required because we will actually
+be using Twython to actually Tweet and not just consume data, so the set up takes a
+little time. By the end of it you will have an Application Key and Token, and an OAuth Token and Secret.
+
+
+###Step 3 - Start coding:
+
+Most of this code was written after only a few months of programming/Python experience,
+so, while pretty ugly I hope this gets across how easy and fun it is to play with Twython.
+
+My Twitter bot is pretty basic and these are all the imports required.
+
+```python
+import configparser
+import os
+import re
+from twython import TwythonStreamer
+from twython import Twython
+from borrow import Borrow # This is the class my application uses to talk to the database
+```
+
+Next, grab all the keys and tokens for authenticating with the Twitter servers.
+
+```python
+dirname, file_name = os.path.split(os.path.abspath(__file__))
+# Grab Twitter  config
+parser = configparser.ConfigParser()
+parser.read(dirname + '/twitter_settings.cfg')
+APP_KEY = parser.get('twitter', 'APP_KEY')
+APP_SECRET = parser.get('twitter', 'APP_SECRET')
+OAUTH_TOKEN = parser.get('twitter', 'OAUTH_TOKEN')
+OAUTH_TOKEN_SECRET = parser.get('twitter', 'OAUTH_TOKEN_SECRET')
+```
+
+Now, if you're unfamiliar with the @IBorrowDesk bot, it  does nothing unless another
+user tweets "at" it. Assuming the tweet contains a stock ticker in the format:
+"$APPL", the bot will immediately reply to the User with some data about the ticker. A picture
+is probably easiest:
+
+![@IBorrowDesk Example](TwitterBotEx.png)
+
+Simple enough, but this means the bot needs to do two things: 1) Be alerted when
+someone tweets at it and 2) Respond appropriately.
+
+
+###Step 4 - Configure the Streamer:
+
+Twython has very easy to understand documentation on setting up a [Streamer](https://twython.readthedocs.org/en/latest/usage/streaming_api.html).
+
+Essentially all that is required is creating a class that inherits from `TwythonStreamer`
+and implementing `on_success` and `on_error` methods for handling a received tweet
+or error respectively. Here's my very basic version for the IBorrowDesk Streamer:
+
+```python
+class BorrowStreamer(TwythonStreamer):
+    """Twitter Streamer class for responding to tweets at the bot"""
+    def __init__(self, *a, **kwargs):
+
+        # Create a Borrow instance
+        self._stock_loan = Borrow(database_name='stock_loan', create_new=False)
+
+        TwythonStreamer.__init__(self, *a, **kwargs)
+
+    def on_success(self, data):
+        """If the streamer receives a tweet that matches its filter"""
+        if 'text' in data:
+            # Check that it wasn't one of the bot's own tweets
+            if data['user']['screen_name'] != 'IBorrowDesk':
+                #Print out the tweet's text, author screename and id
+                # and call the respond function
+                print(data['text'])
+                print(data['user']['screen_name'])
+                print(data['id_str'])
+                self._respond(data)
+
+
+    def on_error(self, status_code, data):
+        print(status_code)
+        print(data)
+        print("There was an error")
+
+    def _respond(self, data):
+        # Covered in the next section
+
+stream = BorrowStreamer(APP_KEY, APP_SECRET, OAUTH_TOKEN, OAUTH_TOKEN_SECRET)
+stream.statuses.filter(track='@IBorrowDesk')
+```
+
+It's not necessary in most cases to even implement the `__init__` method, but in my case
+I want to set up my database wrapper as it requires some initialization steps (don't ask).
+
+`on_error` doesn't really do anything - honestly I see an error in the logs every few weeks
+so it's not something I worry about.
+
+`on_success` receives a dictionary nicely prepared for us by Twython containing
+all the information in a Tweet (there's a lot more than you
+[probably think](https://dev.twitter.com/overview/api/tweets)) - and all we need
+to do is make sure it wasn't a Tweet by the bot itself
+`if data['user']['screen_name'] != 'IBorrowDesk'`.
+
+The Streamer is instantiated with our previously mentioned keys and tokens, and set
+to filter for statuses (Tweets) that contain our Twitter bot's name (last line of the snippet).
+ That's it! Anytime a Twitter user in the world writes a tweet containing that
+ string, `on_success` will be called. Nifty...
+
+###Step 5 - Responding:
+
+Responding to an incoming Tweet is also fairly straightforward (please disregard
+the ugly code):
+
+```python
+class BorrowStreamer(TwythonStreamer):
+    #...continued
+
+    def _respond(self, data):
+        """Respond (or not) to a matched Tweet"""
+
+        # Instantiate a Rest instance
+        twitter_rest = Twython(APP_KEY, APP_SECRET, OAUTH_TOKEN, OAUTH_TOKEN_SECRET)
+
+        # Grab the tweet's text and try to extract a symbol from it
+        text = data['text']
+        matches = re.findall(TICKER_MATCH, text)
+        print('matches were {} \n'.format(str(matches)))
+        if matches:
+            summary = self._stock_loan.summary_report(matches)
+            print(summary)
+
+            # Confirm the summary report is not empty
+            if summary != None:
+                for ticker in summary:
+                    print(ticker.symbol)
+                    #extract the relevant information from the
+                    # summary report and build a status string
+                    symbol = ticker.symbol
+                    name = ticker.name[:20]
+                    available = '{:,}'.format(ticker.available)
+                    fee = '{:.1%}'.format(ticker.fee/100)
+                    datetime = ticker.datetime
+                    url = 'https://www.iborrowdesk.com/report/{}'.format(symbol)
+                    screen_name = data['user']['screen_name']
+
+                    status = '@{} ${} {}, Available: {}, Fee: {}, Last Updated: {} '.\
+                        format(screen_name, symbol, name, available, fee, datetime)
+                    status = status + url
+
+                    # Grab the id of the user that tweeted at the bot
+                    id_str = data['id_str']
+
+                    # Update status
+                    twitter_rest.update_status(status=status, in_reply_to_status_id=id_str)
+
+                    print('Match found {} \n'.format(ticker))
+                    print('Responded with {} \n'.format(status))
+
+            else:
+                print('Invalid symbols matched \n')
+        else:
+            print('No match found \n')
+```
+
+First a Twython *REST* object is instantiated - this will allow the bot to respond (if necessary)
+to the incoming Tweet. Then the inbound Tweet's text is matched to a regex:
+`TICKER_MATCH = r"\$([a-zA-Z0-9\.]{1,8})"`. If there are any matches they are extracted
+and used to query the database. Assuming the database had relevent record(s)a a new Tweet
+string is built up using that data.
+
+Finally `update_status` is called and the Tweet is sent - with a `in_reply_to_status` set to
+the id of the author of the original Tweet. The entire process from a User making
+the original Tweet and the bot responding usually takes less than a second
+which I always find satisfying when testing.
+
+###Conclusion
+
+That's pretty much it, thanks for reading! Not shown is a shell script I use to launch the process. A more
+robust solution would be to turn the entire Python script into a daemon process that
+could restart itself in the event of a hard crash (which does seem to occur about once
+a month). I hope you found this interesting and my old code not too difficult to read.
+The entire IBorrowDesk repository is available on [GitHub](https://github.com/cjmochrie/I-Borrow-Desk) -
+although it is now mostly Javascript thanks to a recent rebuild of the front-end with React.
+---
+pub_date: 2016-02-20
+---
+twitter_handle: cameronm1

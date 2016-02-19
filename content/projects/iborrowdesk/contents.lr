@@ -1,0 +1,25 @@
+name: IBorrowDesk
+---
+date: 2015-07-01
+---
+description: Using data from [Interactive Brokers](https://www.interactivebrokers.com),
+IBorrowDesk allows users to track live and historical
+fee rates and availability for [shorting stocks](https://en.wikipedia.org/wiki/Securities_lending).
+Well over 10k securities are currently in the database with daily data going
+back to when I began logging in July 2015. Real-time data is available in 15min
+intervals for the last week.
+
+Registered users can keep a watchlist of securities and receive a morning summary
+with the latest data.
+
+ Technologies used:
+ - Back-end: Flask, PostgreSQL, Apache2
+ - Front-end: React, Redux, Bootstrap, React-Stockcharts
+
+I also created a Twitter bot [@IBorrowDesk](https://twitter.com/IBorrowDesk) as a
+fun side-project and marketing vehicle. Anyone can access current data by tweeting
+@ the bot with tickers and receive the latest data.
+---
+type: Web application and Twitter Bot
+---
+website: http://www.iborrowdesk.com
